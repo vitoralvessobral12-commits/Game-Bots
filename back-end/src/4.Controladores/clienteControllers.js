@@ -2,14 +2,13 @@ const clienteServices = require('../3.Serviços/clienteServices')
 
 
 async function criarCliente(req, res) {
-    const { nome, email, senha, codigo_identificacao } = req.body
+    const { nome, email, senha } = req.body
 
     try {
         const resultado = await clienteServices.criarCliente(
             nome,
             email,
-            senha,
-            codigo_identificacao
+            senha
         )
 
         if (resultado.status !== 201) {
@@ -146,6 +145,52 @@ async function reativarCliente(req, res) {
     }
 }
 
+async function loginCliente(req, res) {
+    const { email, senha } = req.body
+
+    try {
+        const resultado = await clienteServices.loginCliente(email, senha)
+
+        if (resultado.status && resultado.status !== 200) {
+            return res.status(resultado.status).json({
+                error: resultado.info
+            })
+        }
+
+        return res.status(200).json({
+            mensagem: 'Login realizado com sucesso',
+            cliente: resultado.dados
+        })
+
+    } catch (error) {
+        return res.status(500).json({
+            error: 'Erro interno do servidor'
+        })
+    }
+}
+
+async function buscarPerfilCliente(req, res) {
+    const clienteId = req.clienteId
+
+    try {
+        const resultado = await clienteServices.buscarPerfilCliente(clienteId)
+
+        if (resultado.status === 404) {
+            return res.status(404).json({
+                error: resultado.info
+            })
+        }
+
+        return res.status(200).json({
+            mensagem: 'Perfil do cliente encontrado',
+            cliente: resultado.dados
+        })
+    } catch (error) {
+        return res.status(500).json({
+            error: 'Erro interno do servidor'
+        })
+    }
+}
 
 module.exports = {
     criarCliente,
@@ -153,5 +198,7 @@ module.exports = {
     listarClientes,
     atualizarCliente,
     desativarCliente,
-    reativarCliente
+    reativarCliente,
+    loginCliente,
+    buscarPerfilCliente
 }

@@ -1,34 +1,3 @@
 import { Link } from 'react-router-dom'
-import StatCard from '../components/StatCard'
-
-export default function PainelAtendente() {
-  return (
-    <div className="container page-space">
-      <div className="dashboard-heading">
-        <div>
-          <span className="eyebrow">PAINEL INTERNO</span>
-          <h1>Olá, atendente.</h1>
-          <p>Gerencie as partidas da Robot Arena.</p>
-        </div>
-        <Link to="/atendente/partida" className="btn btn-primary">+ Registrar partida</Link>
-      </div>
-
-      <div className="stats-grid">
-        <StatCard icon="⚔" value="24" label="Partidas hoje" />
-        <StatCard icon="👥" value="48" label="Jogadores ativos" />
-        <StatCard icon="🤖" value="6" label="Robôs disponíveis" />
-      </div>
-
-      <section className="card">
-        <div className="section-title">
-          <h2>Atalhos</h2>
-        </div>
-        <div className="shortcut-grid">
-          <Link to="/atendente/partida" className="shortcut-card"><span>⚔</span><strong>Registrar partida</strong><small>Adicionar resultado</small></Link>
-          <Link to="/ranking" className="shortcut-card"><span>🏆</span><strong>Ver ranking</strong><small>Acompanhar jogadores</small></Link>
-          <Link to="/historico" className="shortcut-card"><span>📋</span><strong>Histórico</strong><small>Consultar partidas</small></Link>
-        </div>
-      </section>
-    </div>
-  )
-}
+import { getSession } from '../services/api'
+export default function PainelAtendente(){const user=getSession()?.user||{};return <div className="container page-space"><div className="operator-hero"><div><span className="eyebrow">PAINEL OPERACIONAL</span><h1>Olá, {user.nome||'atendente'}.</h1><p>Atenda os jogadores e registre o resultado de cada batalha.</p></div><div className="operator-badge">● ONLINE</div></div><section className="operator-main card"><div><span className="operator-icon">⚔</span><span className="eyebrow">FUNÇÃO PRINCIPAL</span><h2>Registrar partida</h2><p>Informe os jogadores, escolha o robô e marque quem venceu. O atendente logado será registrado automaticamente.</p></div><Link to="/atendente/partida" className="btn btn-primary">Registrar partida →</Link></section><div className="operator-notice"><strong>Fluxo rápido</strong><span>Identifique o jogador pelo código → escolha os participantes → selecione o robô → confirme o vencedor.</span></div></div>}

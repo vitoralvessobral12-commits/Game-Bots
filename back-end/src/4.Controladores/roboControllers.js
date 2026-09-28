@@ -1,7 +1,5 @@
-const roboService = require('../3.Serviços/roboService')
+const roboService = require('../3.Serviços/roboServices')
 
-
-// CRIAR ROBÔ
 async function criarRobo(req, res) {
     const { nome, categoria } = req.body
 
@@ -26,7 +24,6 @@ async function criarRobo(req, res) {
 }
 
 
-// BUSCAR ROBÔ
 async function buscarRobo(req, res) {
     const { id } = req.params
 
@@ -51,7 +48,6 @@ async function buscarRobo(req, res) {
 }
 
 
-// LISTAR ROBÔS
 async function listarRobos(req, res) {
     try {
         const resultado = await roboService.listarRobos()
@@ -68,7 +64,6 @@ async function listarRobos(req, res) {
 }
 
 
-// ATUALIZAR ROBÔ
 async function atualizarRobo(req, res) {
     const { id } = req.params
     const { nome, categoria } = req.body
@@ -98,7 +93,6 @@ async function atualizarRobo(req, res) {
 }
 
 
-// DESATIVAR ROBÔ
 async function desativarRobo(req, res) {
     const { id } = req.params
 
@@ -123,7 +117,6 @@ async function desativarRobo(req, res) {
 }
 
 
-// REATIVAR ROBÔ
 async function reativarRobo(req, res) {
     const { id } = req.params
 

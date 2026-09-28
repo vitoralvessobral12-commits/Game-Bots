@@ -1,4 +1,4 @@
-const atendenteService = require('./../3.Serviços/atendenteService')
+const atendenteService = require('./../3.Serviços/atendenteServices')
 
 
 async function criarAtendente(req, res) {
@@ -145,6 +145,37 @@ async function reativarAtendente(req, res) {
     }
 }
 
+async function loginAtendente(req, res) {
+    const { email, senha } = req.body   
+
+    try {
+        const resultado = await atendenteService.loginAtendente(email, senha)
+
+        if (resultado.status === 401) {
+            return res.status(401).json({
+                error: resultado.info
+            })
+        }
+
+        if (resultado.status === 401) {
+            return res.status(401).json({
+                error: resultado.info
+            })
+        }
+
+        return res.status(200).json({
+            mensagem: 'Atendente logado com sucesso',
+            atendente: resultado.dados
+        })
+    } catch (error) {
+          console.error(error)
+        return res.status(500).json({
+            error: 'Erro interno do servidor'
+        })
+    }
+
+}
+
 
 module.exports = {
     criarAtendente,
@@ -152,5 +183,6 @@ module.exports = {
     listarAtendentes,
     atualizarAtendente,
     desativarAtendente,
-    reativarAtendente
+    reativarAtendente,
+    loginAtendente
 }

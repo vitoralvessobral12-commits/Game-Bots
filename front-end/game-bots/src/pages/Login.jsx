@@ -1,41 +1,132 @@
-import { Link } from 'react-router-dom'
+import { useState } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
+import { api, saveSession } from '../services/api'
 
 export default function Login() {
-  function handleSubmit(event) {
-    event.preventDefault()
-    // Depois: chamar a API de login.
-  }
+    const navigate = useNavigate()
 
-  return (
-    <section className="auth-page">
-      <div className="auth-decoration">
-        <span>ROBOT</span>
-        <strong>ARENA</strong>
-      </div>
+    const [form, setForm] = useState({
+        email: '',
+        senha: '',
+    })
 
-      <div className="form-card">
-        <span className="eyebrow">ÁREA DO JOGADOR</span>
-        <h1>Entrar</h1>
-        <p className="form-description">Acesse sua conta e acompanhe sua evolução.</p>
+    const [error, setError] = useState('')
+    const [loading, setLoading] = useState(false)
 
-        <form onSubmit={handleSubmit}>
-          <label>
-            E-mail
-            <input type="email" placeholder="seu@email.com" required />
-          </label>
+    async function handleSubmit(event) {
+        event.preventDefault()
 
-          <label>
-            Senha
-            <input type="password" placeholder="••••••••" required />
-          </label>
+        setError('')
+        setLoading(true)
 
-          <button className="btn btn-primary btn-full" type="submit">Entrar na arena</button>
-        </form>
+        try {
+            const data = await api.loginCliente(form)
 
-        <p className="form-footer">
-          Ainda não tem uma conta? <Link to="/cadastro">Cadastre-se</Link>
-        </p>
-      </div>
-    </section>
-  )
+            const token = data?.token || data?.cliente?.token
+
+            if (!token) {
+                throw new Error('O servidor não retornou o token.')
+            }
+
+            const user = data.cliente || data.dados || {}
+
+            saveSession({
+                token,
+                user: {
+                    ...user,
+                    tipo: 'cliente',
+                },
+            })
+
+            navigate('/perfil')
+        } catch (err) {
+            setError(
+                err?.message || 'Não foi possível realizar o login.'
+            )
+        } finally {
+            setLoading(false)
+        }
+    }
+
+    return (
+        <section className="auth-page">
+            <div className="auth-decoration">
+                <span>ROBOT</span>
+                <strong>ARENA</strong>
+                <p>Entre na sua conta e acompanhe sua jornada.</p>
+            </div>
+
+            <div className="form-card">
+                <span className="eyebrow">ÁREA DO JOGADOR</span>
+
+                <h1>Entrar</h1>
+
+                <p className="form-description">
+                    Acesse sua conta e acompanhe sua evolução.
+                </p>
+
+                <form onSubmit={handleSubmit}>
+                    <label>
+                        E-mail
+
+                        <input
+                            type="email"
+                            value={form.email}
+                            onChange={(event) =>
+                                setForm({
+                                    ...form,
+                                    email: event.target.value,
+                                })
+                            }
+                            placeholder="seu@email.com"
+                            required
+                        />
+                    </label>
+
+                    <label>
+                        Senha
+
+                        <input
+                            type="password"
+                            value={form.senha}
+                            onChange={(event) =>
+                                setForm({
+                                    ...form,
+                                    senha: event.target.value,
+                                })
+                            }
+                            placeholder="••••••••"
+                            required
+                        />
+                    </label>
+
+                    {error && (
+                        <div className="alert alert-error">
+                            {error}
+                        </div>
+                    )}
+
+                    <button
+                        className="btn btn-primary btn-full"
+                        disabled={loading}
+                    >
+                        {loading
+                            ? 'Entrando...'
+                            : 'Entrar na arena'}
+                    </button>
+                </form>
+
+                <p className="form-footer">
+                    Ainda não tem uma conta?{' '}
+                    <Link to="/cadastro">Cadastre-se</Link>
+                </p>
+
+                <p className="form-footer">
+                    <Link to="/atendente/login">
+                        Acesso do atendente
+                    </Link>
+                </p>
+            </div>
+        </section>
+    )
 }

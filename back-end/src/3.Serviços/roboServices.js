@@ -1,6 +1,5 @@
 const Robo = require('./../2.Modelos/robos')
 
-// CRIAR ROBÔ
 async function criarRobo(nome, categoria) {
     try {
         const nomeExiste = await Robo.findOne({
@@ -35,7 +34,6 @@ async function criarRobo(nome, categoria) {
 }
 
 
-// BUSCAR ROBÔ
 async function buscarRobo(id) {
     try {
         const robo = await Robo.findOne({
@@ -67,7 +65,6 @@ async function buscarRobo(id) {
 }
 
 
-// LISTAR ROBÔS
 async function listarRobos() {
     try {
         const robos = await Robo.findAll({
@@ -93,7 +90,6 @@ async function listarRobos() {
 }
 
 
-// ATUALIZAR ROBÔ
 async function atualizarRobo(id, nome, categoria) {
     try {
         const robo = await Robo.findOne({
@@ -110,7 +106,6 @@ async function atualizarRobo(id, nome, categoria) {
             }
         }
 
-        // Verifica se o novo nome pertence a outro robô
         const nomeExiste = await Robo.findOne({
             where: {
                 nome
@@ -144,7 +139,6 @@ async function atualizarRobo(id, nome, categoria) {
 }
 
 
-// DESATIVAR ROBÔ
 async function desativarRobo(id) {
     try {
         const robo = await Robo.findOne({
@@ -180,7 +174,6 @@ async function desativarRobo(id) {
 }
 
 
-// REATIVAR ROBÔ
 async function reativarRobo(id) {
     try {
         const robo = await Robo.findOne({

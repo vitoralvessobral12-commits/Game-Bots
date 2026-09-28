@@ -1,5 +1,5 @@
 const Atendente = require('./../2.Modelos/atendente')
-
+const jwt = require('jsonwebtoken')
 
 async function criarAtendente(nome, email, senha) {
     try {
@@ -197,11 +197,56 @@ async function reativarAtendente(id) {
 }
 
 
+async function loginAtendente(email, senha) {
+    try {
+        const atendente = await Atendente.findOne({
+            where: {
+                email,
+                ativo: true
+            }
+        })
+
+        if (!atendente) {
+            return {
+                status: 401,
+                info: 'Atendente não encontrado'
+            }
+        }
+
+        if (atendente.senha !== senha) {
+            return {
+                status: 401,
+                info: 'Senha incorreta'
+            }
+        }
+
+        const token = jwt.sign({
+            id: atendente.id,
+            email: atendente.email
+        }, process.env.JWT_SECRET, {
+            expiresIn: '1h'
+        })
+
+        return {
+            status: 200,
+            dados: {
+                id: atendente.id,
+                nome: atendente.nome,
+                email: atendente.email,
+                token
+            }
+        }
+    } catch (error) {
+        throw error
+    }
+}
+
 module.exports = {
     criarAtendente,
     buscarAtendente,
     listarAtendentes,
     atualizarAtendente,
     desativarAtendente,
-    reativarAtendente
+    reativarAtendente,
+    loginAtendente
 }

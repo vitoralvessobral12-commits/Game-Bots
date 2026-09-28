@@ -163,9 +163,9 @@ async function buscarPartida(id) {
     }
 }
 
+// FUNÇÃO QUE LISTA APENAS OS DADOS DAS PARTIDAS SEM RELACIONAMENTOS
 
-
-async function listarPartidas() {
+/* async function listarPartidas() {
     try {
         const partidas = await Partida.findAll()
 
@@ -186,7 +186,96 @@ async function listarPartidas() {
     } catch (error) {
         throw error
     }
+}   */
+
+
+
+
+// FUNÇÃO DO HISTÓRICO DE PARTIDAS COM RELACIONAMENTOS
+   async function listarPartidas() {
+    try {
+        const partidas = await Partida.findAll({
+            include: [
+                {
+                    model: Cliente,
+                    as: 'jogador1',
+                    attributes: ['id', 'nome']
+                },
+                {
+                    model: Cliente,
+                    as: 'jogador2',
+                    attributes: ['id', 'nome']
+                },
+                {
+                    model: Cliente,
+                    as: 'vencedor',
+                    attributes: ['id', 'nome']
+                },
+                {
+                    model: Robo,
+                    as: 'robo',
+                    attributes: ['id', 'nome']
+                },
+                {
+                    model: Atendente,
+                    as: 'atendente',
+                    attributes: ['id', 'nome']
+                }
+            ],
+
+            order: [['criado_em', 'DESC']]
+        })
+
+        const dados = partidas.map((partida) => ({
+            id: partida.id,
+
+            jogador1: partida.jogador1
+                ? {
+                      id: partida.jogador1.id,
+                      nome: partida.jogador1.nome
+                  }
+                : null,
+
+            jogador2: partida.jogador2
+                ? {
+                      id: partida.jogador2.id,
+                      nome: partida.jogador2.nome
+                  }
+                : null,
+
+            vencedor: partida.vencedor
+                ? {
+                      id: partida.vencedor.id,
+                      nome: partida.vencedor.nome
+                  }
+                : null,
+
+            robo: partida.robo
+                ? {
+                      id: partida.robo.id,
+                      nome: partida.robo.nome
+                  }
+                : null,
+
+            atendente: partida.atendente
+                ? {
+                      id: partida.atendente.id,
+                      nome: partida.atendente.nome
+                  }
+                : null,
+
+            criado_em: partida.criado_em
+        }))
+
+        return {
+            status: 200,
+            dados
+        }
+    } catch (error) {
+        throw error
+    }
 }
+
 
 
 
