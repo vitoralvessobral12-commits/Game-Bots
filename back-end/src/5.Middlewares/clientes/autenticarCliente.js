@@ -8,32 +8,33 @@ require('dotenv').config({
 function autenticarCliente(req, res, next) {
     const authHeader = req.headers.authorization
 
-    
-    
     if (!authHeader) {
         return res.status(401).json({
             error: 'Token não fornecido'
         })
     }
 
-   
-    const [tipo, token] = authHeader.split(' ')
+    const [esquema, token] = authHeader.split(' ')
 
-
-    if (tipo !== 'Bearer' || !token) {
+    if (esquema !== 'Bearer' || !token) {
         return res.status(401).json({
             error: 'Token inválido'
         })
     }
 
     try {
-      
         const decoded = jwt.verify(
             token,
             process.env.JWT_SECRET
         )
 
-   
+        // Um token de atendente é válido (mesma assinatura), mas NÃO pode ser usado como cliente
+        if (decoded.tipo !== 'cliente') {
+            return res.status(403).json({
+                error: 'Acesso negado'
+            })
+        }
+
         req.clienteId = decoded.id
 
         next()

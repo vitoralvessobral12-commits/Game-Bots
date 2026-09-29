@@ -1,9 +1,9 @@
 const sequelize = require('./../1.Config/database')
 const { DataTypes } = require('sequelize')
 
-const Robo = sequelize.define('Robo',{
+const Robo = sequelize.define('Robo', {
 
-     id: {
+    id: {
         type: DataTypes.INTEGER,
         primaryKey: true,
         autoIncrement: true
@@ -16,7 +16,7 @@ const Robo = sequelize.define('Robo',{
 
     categoria: {
         type: DataTypes.STRING,
-        allowNull: false,
+        allowNull: false
     },
 
     ativo: {
@@ -24,5 +24,9 @@ const Robo = sequelize.define('Robo',{
         allowNull: false,
         defaultValue: true
     }
+
+}, {
+    tableName: 'robos'
 })
+
 module.exports = Robo

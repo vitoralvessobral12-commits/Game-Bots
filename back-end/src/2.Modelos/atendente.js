@@ -24,11 +24,15 @@ const Atendente = sequelize.define('Atendente', {
         type: DataTypes.STRING,
         allowNull: false
     },
+
     ativo: {
-    type: DataTypes.BOOLEAN,
-    allowNull: false,
-    defaultValue: true
-}
+        type: DataTypes.BOOLEAN,
+        allowNull: false,
+        defaultValue: true
+    }
+
+}, {
+    tableName: 'atendentes'
 })
 
 module.exports = Atendente

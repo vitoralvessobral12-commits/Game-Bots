@@ -7,9 +7,12 @@ async function criarPartida(req, res) {
         cliente1_id,
         cliente2_id,
         robo_id,
-        vencedor_id,
-        atendente_id
+        vencedor_id
     } = req.body
+
+    // O atendente vem do token (validado no middleware), nunca do corpo da requisição.
+    // Assim ninguém consegue registrar uma partida em nome de outro atendente.
+    const atendente_id = req.atendente.id
 
     try {
         const resultado = await partidaService.criarPartida(

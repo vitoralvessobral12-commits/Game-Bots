@@ -16,46 +16,31 @@ const Partida = sequelize.define('Partida', {
     cliente1_id: {
         type: DataTypes.INTEGER,
         allowNull: false,
-        references: {
-            model: 'clientes',
-            key: 'id'
-        }
+        references: { model: 'clientes', key: 'id' }
     },
 
     cliente2_id: {
         type: DataTypes.INTEGER,
         allowNull: false,
-        references: {
-            model: 'clientes',
-            key: 'id'
-        }
+        references: { model: 'clientes', key: 'id' }
     },
 
     vencedor_id: {
         type: DataTypes.INTEGER,
         allowNull: false,
-        references: {
-            model: 'clientes',
-            key: 'id'
-        }
+        references: { model: 'clientes', key: 'id' }
     },
 
     robo_id: {
         type: DataTypes.INTEGER,
         allowNull: false,
-        references: {
-            model: 'robos',
-            key: 'id'
-        }   
+        references: { model: 'robos', key: 'id' }
     },
 
     atendente_id: {
         type: DataTypes.INTEGER,
         allowNull: false,
-        references: {
-            model: 'atendentes',
-            key: 'id'
-        }
+        references: { model: 'atendentes', key: 'id' }
     },
 
     criado_em: {
@@ -64,26 +49,14 @@ const Partida = sequelize.define('Partida', {
         defaultValue: DataTypes.NOW
     }
 
-})
-Partida.belongsTo(Cliente, {
-    foreignKey: 'cliente1_id',
-    as: 'jogador1'
+}, {
+    tableName: 'partidas'
 })
 
-Partida.belongsTo(Cliente, {
-    foreignKey: 'cliente2_id',
-    as: 'jogador2'
-})
-Partida.belongsTo(Cliente, {
-    foreignKey: 'vencedor_id',
-    as: 'vencedor'
-})
-Partida.belongsTo(Robo, {
-    foreignKey: 'robo_id',
-    as: "robo"
-})
-Partida.belongsTo(Atendente, {
-    foreignKey: 'atendente_id',
-    as: 'atendente'
-})
+Partida.belongsTo(Cliente, { foreignKey: 'cliente1_id', as: 'jogador1' })
+Partida.belongsTo(Cliente, { foreignKey: 'cliente2_id', as: 'jogador2' })
+Partida.belongsTo(Cliente, { foreignKey: 'vencedor_id', as: 'vencedor' })
+Partida.belongsTo(Robo, { foreignKey: 'robo_id', as: 'robo' })
+Partida.belongsTo(Atendente, { foreignKey: 'atendente_id', as: 'atendente' })
+
 module.exports = Partida

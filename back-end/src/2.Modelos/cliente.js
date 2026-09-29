@@ -30,14 +30,15 @@ const Cliente = sequelize.define('Cliente', {
         allowNull: false,
         unique: true
     },
+
     ativo: {
         type: DataTypes.BOOLEAN,
         allowNull: false,
         defaultValue: true
     }
 
+}, {
+    tableName: 'clientes'
 })
 
 module.exports = Cliente
-
-

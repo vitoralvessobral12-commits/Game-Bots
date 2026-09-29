@@ -1,5 +1,13 @@
 const Atendente = require('./../2.Modelos/atendente')
 const jwt = require('jsonwebtoken')
+const bcrypt = require('bcrypt')
+
+// Custo do hash: 12 é um bom equilíbrio entre segurança e velocidade
+const SALT_ROUNDS = 12
+
+// Hash "falso" usado quando o e-mail não existe, para o login levar
+// o mesmo tempo com e-mail certo ou errado (evita descobrir e-mails pelo tempo de resposta)
+const HASH_FALSO = bcrypt.hashSync('senha-falsa-apenas-para-igualar-tempo', SALT_ROUNDS)
 
 async function criarAtendente(nome, email, senha) {
     try {
@@ -14,10 +22,13 @@ async function criarAtendente(nome, email, senha) {
             }
         }
 
+        // A senha NUNCA vai crua para o banco: salvamos apenas o hash
+        const senhaHash = await bcrypt.hash(senha, SALT_ROUNDS)
+
         const atendente = await Atendente.create({
             nome,
             email,
-            senha,
+            senha: senhaHash,
             ativo: true
         })
 
@@ -108,10 +119,14 @@ async function atualizarAtendente(id, nome, senha) {
             }
         }
 
-        await atendente.update({
-            nome,
-            senha
-        })
+        const dadosAtualizados = { nome }
+
+        // Só troca a senha se uma nova foi enviada, e sempre com hash
+        if (senha) {
+            dadosAtualizados.senha = await bcrypt.hash(senha, SALT_ROUNDS)
+        }
+
+        await atendente.update(dadosAtualizados)
 
         return {
             status: 200,
@@ -206,23 +221,23 @@ async function loginAtendente(email, senha) {
             }
         })
 
-        if (!atendente) {
-            return {
-                status: 401,
-                info: 'Atendente não encontrado'
-            }
-        }
+        // Sempre executa o compare (mesmo sem atendente) para manter o tempo parecido
+        const hashParaComparar = atendente ? atendente.senha : HASH_FALSO
 
-        if (atendente.senha !== senha) {
+        const senhaConfere = await bcrypt.compare(senha || '', hashParaComparar)
+
+        // Mesma resposta para "e-mail não existe" e "senha errada"
+        if (!atendente || !senhaConfere) {
             return {
                 status: 401,
-                info: 'Senha incorreta'
+                info: 'E-mail ou senha inválidos'
             }
         }
 
         const token = jwt.sign({
             id: atendente.id,
-            email: atendente.email
+            email: atendente.email,
+            tipo: 'atendente'
         }, process.env.JWT_SECRET, {
             expiresIn: '1h'
         })
