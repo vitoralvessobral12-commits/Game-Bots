@@ -9,6 +9,7 @@ const ca = process.env.DB_SSL_CA
     ? process.env.DB_SSL_CA.replace(/\\n/g, '\n')
     : null
 
+console.log('DB_HOST definido?', !!process.env.DB_HOST)
 const sequelize = new Sequelize(
     process.env.DB_NAME,
     process.env.DB_USER,
