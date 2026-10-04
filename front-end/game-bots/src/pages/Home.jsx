@@ -45,7 +45,7 @@ export default function Home() {
         <div className="section-title">
           <div>
             <span className="eyebrow">COMO FUNCIONA</span>
-            <h2>Pronto para lutar?</h2>
+            <h2>Pronto para a arena?</h2>
           </div>
         </div>
 
