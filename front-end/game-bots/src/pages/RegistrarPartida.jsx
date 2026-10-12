@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { api, getSession } from '../services/api'
 
@@ -6,7 +6,6 @@ export default function RegistrarPartida() {
   const navigate = useNavigate()
   const session = getSession()
   const token = session?.token
-  const [clients, setClients] = useState([])
   const [robots, setRobots] = useState([])
   const [code1, setCode1] = useState('')
   const [code2, setCode2] = useState('')
@@ -20,27 +19,26 @@ export default function RegistrarPartida() {
   const [message, setMessage] = useState('')
 
   useEffect(() => {
-    Promise.all([api.listarClientes(token), api.listarRobos()])
-      .then(([clientsData, robotsData]) => {
-        setClients(clientsData.clientes || clientsData.dados || [])
-        setRobots(robotsData.robos || robotsData.dados || [])
-      })
+    // Não baixa mais a lista de todos os clientes: cada jogador é buscado pelo código
+    api.listarRobos()
+      .then((robotsData) => setRobots(robotsData.robos || robotsData.dados || []))
       .catch((err) => setError(`Não foi possível carregar os dados da partida: ${err.message}`))
       .finally(() => setPageLoading(false))
-  }, [token])
+  }, [])
 
-  const activeClients = useMemo(() => clients.filter((client) => client.ativo !== false), [clients])
-
-  function findByCode(code) {
-    return activeClients.find((client) => client.codigo_identificacao?.toUpperCase() === code.trim().toUpperCase())
-  }
-
-  function identifyPlayer(number) {
+  async function identifyPlayer(number) {
     setError(''); setMessage('')
-    const code = number === 1 ? code1 : code2
-    const found = findByCode(code)
-    if (!found) return setError(`Nenhum cliente ativo foi encontrado para o código ${code || 'informado'}.`)
-    if (number === 2 && player1?.id === found.id) return setError('Os dois jogadores precisam ser diferentes.')
+    const code = (number === 1 ? code1 : code2).trim().toUpperCase()
+    if (!/^CLI\d{5,10}$/.test(code)) return setError('Informe um código no formato CLI00001.')
+    let found
+    try {
+      const data = await api.buscarClientePorCodigo(code, token)
+      found = data.cliente
+    } catch (err) {
+      return setError(err.message)
+    }
+    const other = number === 1 ? player2 : player1
+    if (other?.id === found.id) return setError('Os dois jogadores precisam ser diferentes.')
     number === 1 ? setPlayer1(found) : setPlayer2(found)
     setWinner('')
   }
@@ -50,7 +48,7 @@ export default function RegistrarPartida() {
     if (!player1 || !player2 || !robot || !winner) return setError('Preencha todos os campos da partida.')
     setLoading(true)
     try {
-      await api.criarPartida({ cliente1_id: player1.id, cliente2_id: player2.id, robo_id: Number(robot), vencedor_id: Number(winner), atendente_id: session?.user?.id }, token)
+      await api.criarPartida({ cliente1_id: player1.id, cliente2_id: player2.id, robo_id: Number(robot), vencedor_id: Number(winner) }, token)
       setMessage('Partida registrada com sucesso!')
       setTimeout(() => navigate('/atendente'), 900)
     } catch (err) { setError(err.message) } finally { setLoading(false) }

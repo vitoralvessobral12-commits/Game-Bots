@@ -9,11 +9,13 @@ async function request(path, options = {}) {
     try {
         response = await fetch(`${API_URL}${path}`, { ...fetchOptions, headers })
     } catch {
-        throw new Error(`Não foi possível conectar ao servidor em ${API_URL}. Verifique se o backend está ligado na porta 4001.`)
+        throw new Error('Não foi possível conectar ao servidor. Tente novamente em instantes.')
     }
     const text = await response.text()
     let data = {}
     if (text) { try { data = JSON.parse(text) } catch { data = { mensagem: text } } }
+    // Token expirado/inválido ou conta desativada: derruba a sessão local
+    if (response.status === 401 && authToken) clearSession()
     if (!response.ok) throw new Error(data.error || data.mensagem || `Erro ${response.status} ao comunicar com o servidor.`)
     return data
 }
@@ -22,6 +24,8 @@ export const api = {
     loginCliente: (body) => request('/clientes/login', { method: 'POST', body: JSON.stringify(body) }),
     cadastrarCliente: (body) => request('/clientes', { method: 'POST', body: JSON.stringify(body) }),
     perfilCliente: (token) => request('/clientes/perfil', { token }),
+    partidasDoCliente: (token) => request('/clientes/perfil/partidas', { token }),
+    buscarClientePorCodigo: (codigo, token) => request(`/clientes/codigo/${encodeURIComponent(codigo)}`, { token }),
     loginAtendente: (body) => request('/atendentes/login', { method: 'POST', body: JSON.stringify(body) }),
     listarPartidas: () => request('/partidas'),
     listarClientes: (token) => request('/clientes', { token }),
@@ -43,9 +47,21 @@ export function clearSession() {
     localStorage.removeItem('robotArenaUser')
 }
 
+// Lê a validade (exp) do JWT. Não confere assinatura (isso é papel do back-end),
+// serve só para não mostrar telas protegidas com um token já vencido.
+function tokenExpirado(token) {
+    try {
+        const payload = JSON.parse(atob(token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')))
+        return !payload.exp || payload.exp * 1000 <= Date.now()
+    } catch {
+        return true
+    }
+}
+
 export function getSession() {
     const token = localStorage.getItem('robotArenaToken')
     if (!token) return null
+    if (tokenExpirado(token)) { clearSession(); return null }
     let user = {}
     try { user = JSON.parse(localStorage.getItem('robotArenaUser') || '{}') } catch { clearSession(); return null }
     return { token, user }

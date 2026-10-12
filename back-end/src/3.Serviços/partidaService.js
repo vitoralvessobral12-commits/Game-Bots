@@ -192,9 +192,13 @@ async function buscarPartida(id) {
 
 
 // FUNÇÃO DO HISTÓRICO DE PARTIDAS COM RELACIONAMENTOS
-   async function listarPartidas() {
+// Paginada: sem limite, a rota pública devolveria o banco inteiro a cada acesso
+async function listarPartidas({ pagina = 1, limite = 50 } = {}) {
     try {
-        const partidas = await Partida.findAll({
+        const { rows: partidas, count: total } = await Partida.findAndCountAll({
+            limit: limite,
+            offset: (pagina - 1) * limite,
+            distinct: true,
             include: [
                 {
                     model: Cliente,
@@ -269,7 +273,8 @@ async function buscarPartida(id) {
 
         return {
             status: 200,
-            dados
+            dados,
+            paginacao: { pagina, limite, total }
         }
     } catch (error) {
         throw error

@@ -4,11 +4,12 @@ const router = express.Router()
 const roboController = require('../4.Controladores/roboControllers')
 const { autenticarAtendente } = require('../5.Middlewares/atendente/autenticarAtendente')
 const { validarId } = require('../5.Middlewares/clientes/validarId')
+const { validarRobo } = require('../5.Middlewares/robo/robosMiddlewares')
 
 // Escrita: só atendente logado
-router.post('/robos', autenticarAtendente, roboController.criarRobo)
+router.post('/robos', autenticarAtendente, validarRobo, roboController.criarRobo)
 
-router.put('/robos/:id', autenticarAtendente, validarId, roboController.atualizarRobo)
+router.put('/robos/:id', autenticarAtendente, validarId, validarRobo, roboController.atualizarRobo)
 
 router.patch('/robos/:id/desativar', autenticarAtendente, validarId, roboController.desativarRobo)
 

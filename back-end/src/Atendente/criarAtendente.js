@@ -1,13 +1,16 @@
-// Uso (dentro da pasta back-end):  node scripts/criarAtendente.js
+// Uso (dentro da pasta back-end):  node src/Atendente/criarAtendente.js
+// Alternativa sem acesso direto ao banco: POST /admin/atendentes com o cabeçalho x-admin-key.
 // Cria um atendente direto no banco, usando o mesmo service da aplicação
 // (então a senha é salva com bcrypt). Não fica exposto na API.
 
 const path = require('path')
-require('dotenv').config({ path: path.resolve(__dirname, '../.env') })
+// O .env fica na pasta back-end (dois níveis acima deste arquivo)
+require('dotenv').config({ path: path.resolve(__dirname, '../../.env') })
 
 const readline = require('readline')
 const sequelize = require("../1.Config/database")
 const { criarAtendente } = require('../3.Serviços/atendenteServices')
+const { erroNome, erroEmail, erroSenha, normalizarEmail } = require('../5.Middlewares/validacoes')
 
 const rl = readline.createInterface({
     input: process.stdin,
@@ -25,22 +28,15 @@ async function main() {
         // Perguntar aqui evita deixar a senha salva no histórico do terminal
         const senha = await perguntar('Senha (mínimo 8 caracteres): ')
 
-        if (!nome || !email || !senha) {
-            console.log('Todos os campos são obrigatórios.')
+        // Mesmas regras da API, e e-mail normalizado igual ao login (senão o login não encontra a conta)
+        const erro = erroNome(nome) || erroEmail(email) || erroSenha(senha)
+
+        if (erro) {
+            console.log(erro)
             return
         }
 
-        if (!email.includes('@') || !email.includes('.')) {
-            console.log('Email inválido.')
-            return
-        }
-
-        if (senha.length < 8) {
-            console.log('A senha deve ter no mínimo 8 caracteres.')
-            return
-        }
-
-        const resultado = await criarAtendente(nome, email, senha)
+        const resultado = await criarAtendente(nome, normalizarEmail(email), senha)
 
         if (resultado.status !== 201) {
             console.log('Não foi possível criar:', resultado.info)

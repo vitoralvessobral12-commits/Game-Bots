@@ -1,38 +1,38 @@
+const { erroNome, erroEmail, erroSenha, normalizarEmail } = require('./../validacoes')
+
 function validarCadastroCliente(req, res, next) {
-    const {nome, email, senha} = req.body
-if(!nome || !email || !senha) {
-    return res.status(400).json({error: 'Todos os campos são obrigatórios'})
-}
+    const { nome, email, senha } = req.body || {}
 
-if(typeof nome !== 'string' || typeof email !== 'string' || typeof senha !== 'string') {
+    const erro = erroNome(nome) || erroEmail(email) || erroSenha(senha)
 
-    return res.status(400).json({error: 'Todos os campos devem ser preenchidos com texto'})
-}
-
-if(senha.length < 8) {
-    return res.status(400).json({error: 'A senha deve ter no mínimo 8 caracteres'})
-}
-
-if(!email.includes('@') || !email.includes('.')) {
-    return res.status(400).json({error: 'Email inválido'})
-}
-
-if(nome.trim().length === 0 || email.trim().length === 0 || senha.trim().length === 0) {
-    return res.status(400).json({error: 'Nenhum campo pode estar vazio'})
-}
-
-if(nome.length > 30) {
-    return res.status(400).json({error: 'O nome deve ter no máximo 30 caracteres'})
-}
-
- if (senha.includes(' ')) {
-        return res.status(400).json({ error: 'A senha não pode conter espaços' })
+    if (erro) {
+        return res.status(400).json({ error: erro })
     }
-    
-next()
 
+    req.body.nome = nome.trim()
+    req.body.email = normalizarEmail(email)
+
+    next()
+}
+
+// Login (cliente e atendente): só garante que chegaram textos, sem revelar regras de senha
+function validarLogin(req, res, next) {
+    const { email, senha } = req.body || {}
+
+    if (typeof email !== 'string' || typeof senha !== 'string' || !email.trim() || !senha) {
+        return res.status(400).json({ error: 'Informe e-mail e senha' })
+    }
+
+    if (email.length > 100 || senha.length > 200) {
+        return res.status(401).json({ error: 'E-mail ou senha inválidos' })
+    }
+
+    req.body.email = normalizarEmail(email)
+
+    next()
 }
 
 module.exports = {
-    validarCadastroCliente
+    validarCadastroCliente,
+    validarLogin
 }

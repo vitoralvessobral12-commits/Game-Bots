@@ -1,73 +1,53 @@
+const crypto = require('crypto')
+const { Op } = require('sequelize')
+const sequelize = require('./../1.Config/database')
 const Cliente = require('./../2.Modelos/cliente')
+const Partida = require('./../2.Modelos/partidas')
+const Robo = require('./../2.Modelos/robos')
+const { HASH_FALSO, SALT_ROUNDS } = require('./senhas')
 const jwt = require('jsonwebtoken')
 const bcrypt = require('bcrypt')
 
-// Custo do hash: 12 é um bom equilíbrio entre segurança e velocidade
-const SALT_ROUNDS = 12
-
-// Hash "falso" usado quando o e-mail não existe, para o login levar
-// o mesmo tempo com e-mail certo ou errado (evita descobrir e-mails pelo tempo de resposta)
-const HASH_FALSO = bcrypt.hashSync('senha-falsa-apenas-para-igualar-tempo', SALT_ROUNDS)
 
 async function criarCliente(nome, email, senha) {
-    try {
+    const emailExiste = await Cliente.findOne({
+        where: { email: email }
+    })
 
-        const emailExiste = await Cliente.findOne({
-            where: { email: email }
-        })
-
-        if (emailExiste) {
-            return {
-                status: 400,
-                info: 'email ja cadastrado',
-                erro: 'email ja cadastrado'
-            }
+    if (emailExiste) {
+        return {
+            status: 400,
+            info: 'email ja cadastrado'
         }
+    }
 
-        const ultimoCliente = await Cliente.findOne({
-            order: [['id', 'DESC']]
-        })
+    // A senha NUNCA vai crua para o banco: salvamos apenas o hash
+    const senhaHash = await bcrypt.hash(senha, SALT_ROUNDS)
 
-        let proximoNumero = 0
-
-        if (ultimoCliente) {
-            const ultimoCodigo = ultimoCliente.dataValues.codigo_identificacao
-
-            proximoNumero = parseInt(
-                ultimoCodigo.replace('CLI', ''),
-                10
-            ) + 1
-        }
-
-        const codigo_identificacao =
-            `CLI${String(proximoNumero).padStart(5, '0')}`
-
-        // A senha NUNCA vai crua para o banco: salvamos apenas o hash
-        const senhaHash = await bcrypt.hash(senha, SALT_ROUNDS)
-
-        const cliente = await Cliente.create({
+    // O código vem do próprio id (único e gerado pelo banco). Antes ele era calculado a partir do
+    // "último cliente", e dois cadastros ao mesmo tempo podiam gerar o mesmo código.
+    const cliente = await sequelize.transaction(async (transaction) => {
+        const novo = await Cliente.create({
             nome: nome,
-            codigo_identificacao: codigo_identificacao,
+            codigo_identificacao: `TMP-${crypto.randomUUID()}`,
             email: email,
             senha: senhaHash
-        })
+        }, { transaction })
 
-        return {
-            status: 201,
-            dados: {
-                id: cliente.dataValues.id,
-                nome: cliente.dataValues.nome,
-                codigo_identificacao: cliente.dataValues.codigo_identificacao,
-                email: cliente.dataValues.email
-            }
-        }
+        await novo.update({
+            codigo_identificacao: `CLI${String(novo.id).padStart(5, '0')}`
+        }, { transaction })
 
-    } catch (error) {
-        console.log(error)
+        return novo
+    })
 
-        return {
-            status: 500,
-            info: 'Erro ao criar cliente'
+    return {
+        status: 201,
+        dados: {
+            id: cliente.id,
+            nome: cliente.nome,
+            codigo_identificacao: cliente.codigo_identificacao,
+            email: cliente.email
         }
     }
 }
@@ -95,7 +75,7 @@ async function buscarCliente(id) {
         }
 
     } catch (error) {
-        console.log(error)
+        throw error
     }
 }
 
@@ -116,7 +96,7 @@ async function listarClientes() {
         return { dados }
 
     } catch (error) {
-        console.log(error)
+        throw error
     }
 }
 
@@ -144,7 +124,7 @@ async function atualizarCliente(id, nome, senha) {
         }
 
     } catch (error) {
-        console.log(error)
+        throw error
     }
 }
 
@@ -166,7 +146,7 @@ async function desativarCliente(id) {
         }
 
     } catch (error) {
-        console.log(error)
+        throw error
     }
 }
 
@@ -188,7 +168,7 @@ async function reativarCliente(id) {
         }
 
     } catch (error) {
-        console.log(error)
+        throw error
     }
 }
 
@@ -230,6 +210,7 @@ async function loginCliente(email, senha) {
             },
             process.env.JWT_SECRET,
             {
+                algorithm: 'HS256',
                 expiresIn: '1h'
             }
         )
@@ -247,12 +228,7 @@ async function loginCliente(email, senha) {
         }
 
     } catch (error) {
-        console.log(error)
-
-        return {
-            status: 500,
-            info: 'Erro ao realizar login'
-        }
+        throw error
     }
 }
 
@@ -279,7 +255,72 @@ async function buscarPerfilCliente(clienteId) {
         }
 
     } catch (error) {
-        console.log(error)
+        throw error
+    }
+}
+
+
+// Atendente identifica o jogador pelo código (CLI00001) sem baixar a lista inteira de clientes
+async function buscarClientePorCodigo(codigo) {
+    const cliente = await Cliente.findOne({
+        where: { codigo_identificacao: codigo, ativo: true },
+        attributes: ['id', 'nome', 'codigo_identificacao']
+    })
+
+    if (!cliente) {
+        return {
+            status: 404,
+            info: 'Nenhum jogador ativo com esse código'
+        }
+    }
+
+    return {
+        status: 200,
+        dados: {
+            id: cliente.id,
+            nome: cliente.nome,
+            codigo_identificacao: cliente.codigo_identificacao
+        }
+    }
+}
+
+
+// Estatísticas e últimas partidas do cliente logado, calculadas no banco
+async function buscarPartidasDoCliente(clienteId) {
+    const doCliente = {
+        [Op.or]: [{ cliente1_id: clienteId }, { cliente2_id: clienteId }]
+    }
+
+    const [total, vitorias, ultimas] = await Promise.all([
+        Partida.count({ where: doCliente }),
+        Partida.count({ where: { vencedor_id: clienteId } }),
+        Partida.findAll({
+            where: doCliente,
+            include: [
+                { model: Cliente, as: 'jogador1', attributes: ['id', 'nome'] },
+                { model: Cliente, as: 'jogador2', attributes: ['id', 'nome'] },
+                { model: Robo, as: 'robo', attributes: ['id', 'nome'] }
+            ],
+            order: [['criado_em', 'DESC']],
+            limit: 5
+        })
+    ])
+
+    return {
+        status: 200,
+        dados: {
+            total,
+            vitorias,
+            derrotas: total - vitorias,
+            ultimas: ultimas.map((partida) => ({
+                id: partida.id,
+                jogador1: partida.jogador1 ? { id: partida.jogador1.id, nome: partida.jogador1.nome } : null,
+                jogador2: partida.jogador2 ? { id: partida.jogador2.id, nome: partida.jogador2.nome } : null,
+                vencedor_id: partida.vencedor_id,
+                robo: partida.robo ? { id: partida.robo.id, nome: partida.robo.nome } : null,
+                criado_em: partida.criado_em
+            }))
+        }
     }
 }
 
@@ -291,5 +332,7 @@ module.exports = {
     desativarCliente,
     reativarCliente,
     loginCliente,
-    buscarPerfilCliente
+    buscarPerfilCliente,
+    buscarClientePorCodigo,
+    buscarPartidasDoCliente
 }

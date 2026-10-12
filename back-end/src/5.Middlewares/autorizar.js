@@ -1,34 +1,23 @@
-const jwt = require('jsonwebtoken')
-const path = require('path')
-
-require('dotenv').config({ path: path.resolve(__dirname, '../.env') })
+const { lerToken, contaAtiva } = require('./token')
 
 // Aceita token de cliente OU de atendente e guarda quem é em req.usuario
-function autenticarUsuario(req, res, next) {
-    const authHeader = req.headers.authorization
-
-    if (!authHeader) {
+async function autenticarUsuario(req, res, next) {
+    if (!req.headers.authorization) {
         return res.status(401).json({ error: 'Token não fornecido' })
     }
 
-    const [esquema, token] = authHeader.split(' ')
+    const decoded = lerToken(req)
 
-    if (esquema !== 'Bearer' || !token) {
+    if (!decoded || (decoded.tipo !== 'cliente' && decoded.tipo !== 'atendente')) {
         return res.status(401).json({ error: 'Token inválido' })
     }
 
-    try {
-        const decoded = jwt.verify(token, process.env.JWT_SECRET)
-
-        if (decoded.tipo !== 'cliente' && decoded.tipo !== 'atendente') {
-            return res.status(401).json({ error: 'Token inválido' })
-        }
-
-        req.usuario = { id: decoded.id, tipo: decoded.tipo }
-        next()
-    } catch (error) {
-        return res.status(401).json({ error: 'Token inválido' })
+    if (!(await contaAtiva(decoded))) {
+        return res.status(401).json({ error: 'Conta desativada ou inexistente' })
     }
+
+    req.usuario = { id: decoded.id, tipo: decoded.tipo }
+    next()
 }
 
 // Use depois de autenticarUsuario.

@@ -34,6 +34,7 @@ async function criarPartida(req, res) {
             partida: resultado.dados
         })
     } catch (error) {
+        console.error(error)
         return res.status(500).json({
             error: 'Erro interno do servidor'
         })
@@ -69,11 +70,12 @@ async function buscarPartida(req, res) {
 
 async function listarPartidas(req, res) {
     try {
-        const resultado = await partidaService.listarPartidas()
+        const resultado = await partidaService.listarPartidas(req.paginacao)
 
         return res.status(200).json({
             mensagem: 'Partidas encontradas',
-            partidas: resultado.dados
+            partidas: resultado.dados,
+            paginacao: resultado.paginacao
         })
     } catch (error) {
         return res.status(500).json({

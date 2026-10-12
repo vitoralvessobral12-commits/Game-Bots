@@ -1,13 +1,7 @@
 const Atendente = require('./../2.Modelos/atendente')
 const jwt = require('jsonwebtoken')
 const bcrypt = require('bcrypt')
-
-// Custo do hash: 12 é um bom equilíbrio entre segurança e velocidade
-const SALT_ROUNDS = 12
-
-// Hash "falso" usado quando o e-mail não existe, para o login levar
-// o mesmo tempo com e-mail certo ou errado (evita descobrir e-mails pelo tempo de resposta)
-const HASH_FALSO = bcrypt.hashSync('senha-falsa-apenas-para-igualar-tempo', SALT_ROUNDS)
+const { HASH_FALSO, SALT_ROUNDS } = require('./senhas')
 
 async function criarAtendente(nome, email, senha) {
     try {
@@ -78,12 +72,11 @@ async function buscarAtendente(id) {
 }
 
 
-async function listarAtendentes() {
+// incluirInativos: só a área admin vê também os desativados
+async function listarAtendentes({ incluirInativos = false } = {}) {
     try {
         const atendentes = await Atendente.findAll({
-            where: {
-                ativo: true
-            }
+            where: incluirInativos ? {} : { ativo: true }
         })
 
         const dados = atendentes.map((atendente) => ({
@@ -239,6 +232,7 @@ async function loginAtendente(email, senha) {
             email: atendente.email,
             tipo: 'atendente'
         }, process.env.JWT_SECRET, {
+            algorithm: 'HS256',
             expiresIn: '1h'
         })
 

@@ -3,7 +3,7 @@ const router = express.Router()
 const clienteController = require('./../4.Controladores/clienteControllers')
 const { autenticarCliente } = require('./../5.Middlewares/clientes/autenticarCliente')
 const { autenticarAtendente } = require('./../5.Middlewares/atendente/autenticarAtendente')
-const { validarCadastroCliente } = require('./../5.Middlewares/clientes/cadastroCliente')
+const { validarCadastroCliente, validarLogin } = require('./../5.Middlewares/clientes/cadastroCliente')
 const { validarId } = require('./../5.Middlewares/clientes/validarId')
 const { validarAtualizacao } = require('./../5.Middlewares/validarAtualizacao')
 const {
@@ -11,18 +11,35 @@ const {
     proprioClienteOuAtendente,
     apenasProprioCliente
 } = require('./../5.Middlewares/autorizar')
-const { limiteLogin } = require('./../5.Middlewares/limitadores')
+const { limiteLogin, limiteLoginIp, limiteCadastro } = require('./../5.Middlewares/limitadores')
 
 // Cadastro e login: públicos
-router.post('/clientes', validarCadastroCliente, clienteController.criarCliente)
+router.post('/clientes', limiteCadastro, validarCadastroCliente, clienteController.criarCliente)
 
-router.post('/clientes/login', limiteLogin, clienteController.loginCliente)
+router.post('/clientes/login', limiteLoginIp, limiteLogin, validarLogin, clienteController.loginCliente)
 
 // Perfil do próprio cliente logado
 router.get(
     '/clientes/perfil',
     autenticarCliente,
     clienteController.buscarPerfilCliente
+)
+
+// Vitórias, derrotas e últimas partidas do cliente logado
+router.get(
+    '/clientes/perfil/partidas',
+    autenticarCliente,
+    clienteController.buscarPartidasDoCliente
+)
+
+// Atendente identifica o jogador pelo código (ex.: CLI00001)
+router.get(
+    '/clientes/codigo/:codigo',
+    autenticarAtendente,
+    (req, res, next) => /^CLI\d{5,10}$/i.test(req.params.codigo)
+        ? next()
+        : res.status(400).json({ error: 'Código inválido' }),
+    clienteController.buscarClientePorCodigo
 )
 
 // Lista de todos os clientes: só atendente

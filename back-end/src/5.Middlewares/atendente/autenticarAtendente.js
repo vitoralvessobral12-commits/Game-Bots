@@ -1,38 +1,27 @@
-const jwt = require('jsonwebtoken')
-const path = require('path')
+const { lerToken, contaAtiva } = require('./../token')
 
-require('dotenv').config({ path: path.resolve(__dirname, '../../.env') })
-
-function autenticarAtendente(req, res, next) {
-    const authHeader = req.headers.authorization
-
-    if (!authHeader) {
+async function autenticarAtendente(req, res, next) {
+    if (!req.headers.authorization) {
         return res.status(401).json({ error: 'Token não fornecido' })
     }
 
-    const [esquema, token] = authHeader.split(' ')
+    const decoded = lerToken(req)
 
-    if (esquema !== 'Bearer') {
+    if (!decoded) {
         return res.status(401).json({ error: 'Token inválido' })
     }
 
-    if (!token || token === 'null' || token === 'undefined') {
-        return res.status(401).json({ error: 'Token inválido' })
+    // Um token de cliente é válido (mesma assinatura), mas NÃO pode entrar na área do atendente
+    if (decoded.tipo !== 'atendente') {
+        return res.status(403).json({ error: 'Acesso negado' })
     }
 
-    try {
-        const decoded = jwt.verify(token, process.env.JWT_SECRET)
-
-        // Um token de cliente é válido (mesma assinatura), mas NÃO pode entrar na área do atendente
-        if (decoded.tipo !== 'atendente') {
-            return res.status(403).json({ error: 'Acesso negado' })
-        }
-
-        req.atendente = decoded
-        next()
-    } catch (error) {
-        return res.status(401).json({ error: 'Token inválido' })
+    if (!(await contaAtiva(decoded))) {
+        return res.status(401).json({ error: 'Conta desativada ou inexistente' })
     }
+
+    req.atendente = { id: decoded.id, email: decoded.email, tipo: decoded.tipo }
+    next()
 }
 
 module.exports = {

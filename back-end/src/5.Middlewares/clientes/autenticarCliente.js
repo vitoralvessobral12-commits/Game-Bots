@@ -1,49 +1,27 @@
-const jwt = require('jsonwebtoken')
-const path = require('path')
+const { lerToken, contaAtiva } = require('./../token')
 
-require('dotenv').config({
-    path: path.resolve(__dirname, '../../.env')
-})
-
-function autenticarCliente(req, res, next) {
-    const authHeader = req.headers.authorization
-
-    if (!authHeader) {
-        return res.status(401).json({
-            error: 'Token não fornecido'
-        })
+async function autenticarCliente(req, res, next) {
+    if (!req.headers.authorization) {
+        return res.status(401).json({ error: 'Token não fornecido' })
     }
 
-    const [esquema, token] = authHeader.split(' ')
+    const decoded = lerToken(req)
 
-    if (esquema !== 'Bearer' || !token) {
-        return res.status(401).json({
-            error: 'Token inválido'
-        })
+    if (!decoded) {
+        return res.status(401).json({ error: 'Token inválido' })
     }
 
-    try {
-        const decoded = jwt.verify(
-            token,
-            process.env.JWT_SECRET
-        )
-
-        // Um token de atendente é válido (mesma assinatura), mas NÃO pode ser usado como cliente
-        if (decoded.tipo !== 'cliente') {
-            return res.status(403).json({
-                error: 'Acesso negado'
-            })
-        }
-
-        req.clienteId = decoded.id
-
-        next()
-
-    } catch (error) {
-        return res.status(401).json({
-            error: 'Token inválido'
-        })
+    // Um token de atendente é válido (mesma assinatura), mas NÃO pode ser usado como cliente
+    if (decoded.tipo !== 'cliente') {
+        return res.status(403).json({ error: 'Acesso negado' })
     }
+
+    if (!(await contaAtiva(decoded))) {
+        return res.status(401).json({ error: 'Conta desativada ou inexistente' })
+    }
+
+    req.clienteId = decoded.id
+    next()
 }
 
 module.exports = {

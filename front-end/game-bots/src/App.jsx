@@ -13,4 +13,20 @@ import RegistrarPartida from './pages/RegistrarPartida'
 import AtendenteLogin from './pages/AtendenteLogin'
 import NotFound from './pages/NotFound'
 
-export default function App(){return <div className="app"><Navbar/><main className="main-content"><Routes><Route path="/" element={<Home/>}/><Route path="/login" element={<Login/>}/><Route path="/cadastro" element={<Cadastro/>}/><Route path="/ranking" element={<Ranking/>}/><Route path="/historico" element={<Historico/>}/><Route path="/atendente/login" element={<AtendenteLogin/>}/><Route element={<ProtectedRoute role="cliente"/>}><Route path="/perfil" element={<Perfil/>}/></Route><Route element={<ProtectedRoute role="atendente"/>}><Route path="/atendente" element={<PainelAtendente/>}/><Route path="/atendente/partida" element={<RegistrarPartida/>}/></Route><Route path="*" element={<NotFound/>}/></Routes></main><Footer/></div>}
+export default function App(){
+    return <div className="app"><Navbar/>
+    <main className="main-content"><Routes><Route path="/" element={<Home/>}/>
+    <Route path="/login" element={<Login/>}/>
+    <Route path="/cadastro" element={<Cadastro/>}/>
+    <Route path="/ranking" element={<Ranking/>}/>
+    <Route path="/historico" element={<Historico/>}/>
+    <Route path="/atendente/login" element={<AtendenteLogin/>}/>
+    <Route element={<ProtectedRoute role="cliente"/>}>
+        <Route path="/perfil" element={<Perfil/>}/>
+    </Route>
+    <Route element={<ProtectedRoute role="atendente"/>}>
+        <Route path="/atendente" element={<PainelAtendente/>}/>
+        <Route path="/atendente/partida" element={<RegistrarPartida/>}/>
+    </Route>
+    <Route path="*" element={<NotFound/>}/>
+</Routes></main><Footer/></div>}

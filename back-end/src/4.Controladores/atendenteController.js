@@ -55,7 +55,8 @@ async function buscarAtendente(req, res) {
 
 async function listarAtendentes(req, res) {
     try {
-        const resultado = await atendenteService.listarAtendentes()
+        // Rota /admin vê também os desativados
+        const resultado = await atendenteService.listarAtendentes({ incluirInativos: Boolean(req.admin) })
 
         return res.status(200).json({
             mensagem: 'Atendentes encontrados',
@@ -151,14 +152,8 @@ async function loginAtendente(req, res) {
     try {
         const resultado = await atendenteService.loginAtendente(email, senha)
 
-        if (resultado.status === 401) {
-            return res.status(401).json({
-                error: resultado.info
-            })
-        }
-
-        if (resultado.status === 401) {
-            return res.status(401).json({
+        if (resultado.status !== 200) {
+            return res.status(resultado.status).json({
                 error: resultado.info
             })
         }

@@ -5,13 +5,14 @@ const { autenticarAtendente } = require('./../5.Middlewares/atendente/autenticar
 const { validarId } = require('./../5.Middlewares/clientes/validarId')
 const { validarAtualizacao } = require('./../5.Middlewares/validarAtualizacao')
 const { apenasProprioAtendente } = require('./../5.Middlewares/autorizar')
-const { limiteLogin } = require('./../5.Middlewares/limitadores')
+const { validarLogin } = require('./../5.Middlewares/clientes/cadastroCliente')
+const { limiteLogin, limiteLoginIp } = require('./../5.Middlewares/limitadores')
 
-// Não existe rota para criar atendente pela API.
-// Novos atendentes são criados apenas pelo script scripts/criarAtendente.js, direto no servidor.
+// Criar, desativar e reativar atendentes: só pela área /admin (ver adminRoutes.js)
+// ou pelo script src/Atendente/criarAtendente.js.
 
 // Login: público (com limite de tentativas)
-router.post('/atendentes/login', limiteLogin, atendenteController.loginAtendente)
+router.post('/atendentes/login', limiteLoginIp, limiteLogin, validarLogin, atendenteController.loginAtendente)
 
 router.get('/atendentes', autenticarAtendente, atendenteController.listarAtendentes)
 
@@ -21,6 +22,7 @@ router.put('/atendentes/:id', autenticarAtendente, validarId, apenasProprioAtend
 // Desativar: cada atendente só desativa a si mesmo
 router.patch('/atendentes/:id/desativar', autenticarAtendente, validarId, apenasProprioAtendente, atendenteController.desativarAtendente)
 
-router.patch('/atendentes/:id/reativar', autenticarAtendente, validarId, atendenteController.reativarAtendente)
+// (Removido) PATCH /atendentes/:id/reativar: qualquer atendente podia reativar um colega
+// desativado (ex.: alguém que saiu da equipe). Agora isso é só pela área /admin.
 
 module.exports = router

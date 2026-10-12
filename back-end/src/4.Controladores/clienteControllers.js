@@ -22,6 +22,7 @@ async function criarCliente(req, res) {
             cliente: resultado.dados
         })
     } catch (error) {
+        console.error(error)
         return res.status(500).json({
             error: 'Erro interno do servidor'
         })
@@ -192,6 +193,44 @@ async function buscarPerfilCliente(req, res) {
     }
 }
 
+async function buscarClientePorCodigo(req, res) {
+    try {
+        const resultado = await clienteServices.buscarClientePorCodigo(req.params.codigo.toUpperCase())
+
+        if (resultado.status !== 200) {
+            return res.status(resultado.status).json({
+                error: resultado.info
+            })
+        }
+
+        return res.status(200).json({
+            mensagem: 'Cliente encontrado',
+            cliente: resultado.dados
+        })
+    } catch (error) {
+        console.error(error)
+        return res.status(500).json({
+            error: 'Erro interno do servidor'
+        })
+    }
+}
+
+async function buscarPartidasDoCliente(req, res) {
+    try {
+        const resultado = await clienteServices.buscarPartidasDoCliente(req.clienteId)
+
+        return res.status(200).json({
+            mensagem: 'Partidas do cliente encontradas',
+            ...resultado.dados
+        })
+    } catch (error) {
+        console.error(error)
+        return res.status(500).json({
+            error: 'Erro interno do servidor'
+        })
+    }
+}
+
 module.exports = {
     criarCliente,
     buscarCliente,
@@ -200,5 +239,7 @@ module.exports = {
     desativarCliente,
     reativarCliente,
     loginCliente,
-    buscarPerfilCliente
+    buscarPerfilCliente,
+    buscarClientePorCodigo,
+    buscarPartidasDoCliente
 }
